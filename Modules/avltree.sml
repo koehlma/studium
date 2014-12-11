@@ -104,10 +104,15 @@ structure AVLTree = struct
     
     fun delete(T (c, r), x) = T(c, deleteNode(c, x, r))
     
+    fun foldNode(f)(s)(SENTINEL) = s
+      | foldNode(f)(s)(N (v, lt, rt, _)) = foldNode f (f (foldNode f s lt, v)) rt
+    
+    fun fold(f)(s)(T (_, r)) = foldNode f s r
+    
     fun traverseNode(SENTINEL) = nil
       | traverseNode(N (v, lt, rt, _)) = (traverseNode lt)@[v]@(traverseNode rt)
     
-    fun traverse(T (c, r)) = traverseNode(r)
+    fun traverse(T (_, r)) = traverseNode(r)
       
     fun searchNode(c, x, SENTINEL) = NONE
       | searchNode(c, x, N(v, lt, rt, h)) =
@@ -121,4 +126,7 @@ structure AVLTree = struct
     fun createInt() = create(Int.compare)
     fun createReal() = create(Real.compare)
     fun createTree() = create(Tree.compare)
+    
+    fun sum(t) = fold op+ 0 t
+    fun prod(t) = fold op* 1 t
 end;
