@@ -21,4 +21,7 @@ structure Sort = struct
         end
     
     val msortInt = msort Int.compare
+    
+    val strictMergeSort = msort
+    val strictMerge = merge
 end;
