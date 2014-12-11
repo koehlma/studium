@@ -1,84 +1,92 @@
 load "Int";
+load "Real";
+
+use "./tree.sml";
 
 structure AVLTree = struct
-    datatype 'a avltree = AVL of 'a * 'a avltree * 'a avltree * int | SENTINEL
+    datatype 'a avlnode = N of 'a * 'a avlnode * 'a avlnode * int | SENTINEL
+    datatype 'a avltree = T of ('a * 'a -> order) * 'a avlnode
+    
+    fun create(c) = T(c, SENTINEL)
     
     fun depth(SENTINEL) = 0
-      | depth(AVL(_, _, _, d)) = d
+      | depth(N(_, _, _, d)) = d
 
     fun leftmost(SENTINEL) = SENTINEL
-      | leftmost(AVL (v, SENTINEL, rt, d)) = AVL(v, SENTINEL, rt, d)
-      | leftmost(AVL (_, lt, _, _)) = leftmost(lt)
+      | leftmost(N (v, SENTINEL, rt, d)) = N(v, SENTINEL, rt, d)
+      | leftmost(N (_, lt, _, _)) = leftmost(lt)
 
     fun rightmost(SENTINEL) = SENTINEL
-      | rightmost(AVL (v, lt, SENTINEL, d)) = AVL(v, lt, SENTINEL, d)
-      | rightmost(AVL (_, _, rt, _)) = rightmost(rt)
+      | rightmost(N (v, lt, SENTINEL, d)) = N(v, lt, SENTINEL, d)
+      | rightmost(N (_, _, rt, _)) = rightmost(rt)
 
     fun rotateLeft(SENTINEL) = SENTINEL
-      | rotateLeft(AVL(v, lt, SENTINEL, d)) = AVL(v, lt, SENTINEL, d)
-      | rotateLeft(AVL(v, lt, AVL(v', lt', rt', _), _)) =
+      | rotateLeft(N (v, lt, SENTINEL, d)) = N(v, lt, SENTINEL, d)
+      | rotateLeft(N (v, lt, N(v', lt', rt', _), _)) =
         let 
-            val lt = AVL(v, lt, lt', Int.max(depth lt , depth lt') + 1)
+            val lt = N(v, lt, lt', Int.max(depth lt , depth lt') + 1)
         in
-            AVL(v', lt, rt', Int.max(depth lt, depth rt') + 1)
+            N(v', lt, rt', Int.max(depth lt, depth rt') + 1)
         end
 
     fun rotateRight(SENTINEL) = SENTINEL
-      | rotateRight(AVL(v, SENTINEL, rt, n)) = AVL(v, SENTINEL, rt, n)
-      | rotateRight(AVL(v, AVL(v', lt', rt', _), rt, _)) =
+      | rotateRight(N(v, SENTINEL, rt, n)) = N(v, SENTINEL, rt, n)
+      | rotateRight(N(v, N(v', lt', rt', _), rt, _)) =
         let
-            val rt = AVL(v, rt', rt, Int.max(depth rt', depth rt) + 1)
+            val rt = N(v, rt', rt, Int.max(depth rt', depth rt) + 1)
         in
-            AVL(v', lt', rt, Int.max(depth lt', depth rt) + 1)
+            N(v', lt', rt, Int.max(depth lt', depth rt) + 1)
         end
 
-    fun balance(AVL(v, lt, rt, d)) =
+    fun balance(N(v, lt, rt, d)) =
         case depth(rt) - depth(lt) of
               2 =>
                 (case rt of
-                      AVL(_, _, _, ~1) => rotateLeft(AVL(v, lt, rotateRight(rt), d))
-                    | AVL(_, _, _, _) => rotateLeft(AVL(v, lt, rt, d)))
+                      N(_, _, _, ~1) => rotateLeft(N(v, lt, rotateRight(rt), d))
+                    | N(_, _, _, _) => rotateLeft(N(v, lt, rt, d)))
             | ~2 =>
                 (case lt of
-                      AVL(_, _, _, 1) => rotateRight(AVL(v, rotateLeft(lt), rt, d))
-                    | AVL(_, _, _, _) => rotateRight(AVL(v, lt, rt, d)))
-            | _ => AVL(v, lt, rt, d)
+                      N(_, _, _, 1) => rotateRight(N(v, rotateLeft(lt), rt, d))
+                    | N(_, _, _, _) => rotateRight(N(v, lt, rt, d)))
+            | _ => N(v, lt, rt, d)
 
-    fun insort(compare)(x, SENTINEL) = AVL(x, SENTINEL, SENTINEL, 0)
-      | insort(compare)(x, AVL(v, lt, rt, d)) =
-        case compare(x, v) of
+    fun insortNode(_, x, SENTINEL) = N(x, SENTINEL, SENTINEL, 0)
+      | insortNode(c, x, N(v, lt, rt, d)) = 
+        case c(x, v) of
               LESS =>
                 let
-                    val t = insort(compare)(x, lt)
+                    val t = insortNode(c, x, lt)
                     val d = Int.max(depth rt, depth t) + 1
                 in
-                    balance(AVL(v, t, rt, d))
+                    balance(N(v, t, rt, d))
                 end
             | GREATER =>
                 let
-                    val t = insort(compare)(x, rt)
+                    val t = insortNode(c, x, rt)
                     val d = Int.max(depth lt, depth t) + 1
                 in
-                    balance(AVL(v, lt, t, d))
+                    balance(N(v, lt, t, d))
                 end
-            | EQUAL => AVL(v, lt, rt, d)
-            
-    fun delete(compare)(x, SENTINEL) = SENTINEL
-      | delete(compare)(x, AVL(v, lt, rt, _)) =
-        case compare(x, v) of
+            | EQUAL => N(v, lt, rt, d)
+    
+    fun insort(T (c, r), x) = T(c, insortNode(c, x, r))
+    
+    fun deleteNode(_, _, SENTINEL) = SENTINEL
+      | deleteNode(c, x, N(v, lt, rt, _))= 
+        case c(x, v) of
               LESS => 
                 let
-                    val t = delete(compare)(x, lt)
+                    val t = deleteNode(c, x, lt)
                     val d = Int.max(depth rt, depth t) + 1
                 in
-                    balance(AVL(v, t, rt, d))
+                    balance(N(v, t, rt, d))
                 end
             | GREATER =>
                 let
-                    val t = delete(compare)(x, rt)
+                    val t = deleteNode(c, x, rt)
                     val d = Int.max(depth lt, depth t) + 1
                 in
-                    balance(AVL(v, lt, t, d))
+                    balance(N(v, lt, t, d))
                 end
             | EQUAL =>
                 case (lt, rt) of
@@ -87,23 +95,30 @@ structure AVLTree = struct
                     | (SENTINEL, rt) => rt
                     | (lt, rt) =>
                         let
-                            val (AVL (v, _, rx, _)) = leftmost(rt)
-                            val t = delete(compare)(v, rt)
+                            val (N (v, _, rx, _)) = leftmost(rt)
+                            val t = deleteNode(c, v, rt)
                             val d = Int.max(depth lt, depth t) + 1
                         in
-                            balance(AVL(v, lt, t, d))
+                            balance(N(v, lt, t, d))
                         end
-
-    fun traverse(SENTINEL) = nil
-      | traverse(AVL (v, lt, rt, _)) = (traverse lt)@[v]@(traverse rt)
+    
+    fun delete(T (c, r), x) = T(c, deleteNode(c, x, r))
+    
+    fun traverseNode(SENTINEL) = nil
+      | traverseNode(N (v, lt, rt, _)) = (traverseNode lt)@[v]@(traverseNode rt)
+    
+    fun traverse(T (c, r)) = traverseNode(r)
       
-    fun search(compare)(x, SENTINEL) = NONE
-      | search(compare)(x, AVL(v, lt, rt, h)) =
-        case compare(x, v) of 
-              LESS => search compare (x, lt)
-            | GREATER => search compare (x, rt)
-            | EQUAL => SOME (AVL(v, lt, rt, h))
-  
-    val intInsort = insort(Int.compare)
-    val intDelete = delete(Int.compare)
+    fun searchNode(c, x, SENTINEL) = NONE
+      | searchNode(c, x, N(v, lt, rt, h)) =
+        case c(x, v) of 
+              LESS => searchNode(c, x, lt)
+            | GREATER => searchNode(c, x, rt)
+            | EQUAL => SOME (N(v, lt, rt, h))
+    
+    fun search(T (c, r), x) = searchNode(c, x, r)
+    
+    fun createInt() = create(Int.compare)
+    fun createReal() = create(Real.compare)
+    fun createTree() = create(Tree.compare)
 end;
