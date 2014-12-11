@@ -1,7 +1,9 @@
 load "Int";
 load "List";
+load "Real";
 
 use "./sort.sml";
+use "./tree.sml";
 
 structure Set = struct
     datatype 'a set = S of ('a * 'a -> order) * 'a list
@@ -72,4 +74,6 @@ structure Set = struct
     fun delete(S(c, l), x) = S(c, listDelete(c, x, l))
     
     val fromIntList = fromList Int.compare
+    val fromRealList = fromList Real.compare
+    val fromTreeList = fromList Tree.compare
 end;
