@@ -1,13 +1,14 @@
+load "Int";
+load "Real";
 load "String";
 
 use "./avltree.sml";
+use "./tree.sml";
 
 structure Dict = struct
-    datatype 'a entry = E of string * 'a option
+    datatype ('a, 'b) entry = E of 'a * 'b option
     
-    fun entryCompare(E (s1, _), E (s2, _)) = String.compare(s1, s2)
-    
-    fun create() = AVLTree.create entryCompare
+    fun create(c) = AVLTree.create (fn (E (k1, _), E (k2, _)) => c(k1, k2))
     
     fun set(t, k, v) = AVLTree.insort(t, E(k, SOME v))
     
@@ -17,4 +18,9 @@ structure Dict = struct
             | _ => NONE
     
     fun del(t, k) = AVLTree.delete(t, E(k, NONE))
+    
+    fun createString() = create String.compare
+    fun createInt() = create Int.compare
+    fun createReal() = create Real.compare
+    fun createTree() = create Tree.compare
 end;

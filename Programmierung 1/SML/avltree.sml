@@ -1,5 +1,6 @@
 load "Int";
 load "Real";
+load "String";
 
 use "./tree.sml";
 
@@ -123,9 +124,10 @@ structure AVLTree = struct
     
     fun search(T (c, r), x) = searchNode(c, x, r)
     
-    fun createInt() = create(Int.compare)
-    fun createReal() = create(Real.compare)
-    fun createTree() = create(Tree.compare)
+    fun createInt() = create Int.compare
+    fun createReal() = create Real.compare
+    fun createTree() = create Tree.compare
+    fun createString() = create String.compare
     
     fun sum(t) = fold op+ 0 t
     fun prod(t) = fold op* 1 t
