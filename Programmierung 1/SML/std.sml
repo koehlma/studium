@@ -11,5 +11,3 @@ structure Std = struct
     
     fun first s f = if f s then s else first (s + 1) f
 end;
-
-
